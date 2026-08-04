@@ -1,0 +1,8 @@
+node_modules/
+.env
+client/node_modules/
+client/dist/
+client/.env
+payload.json
+client/.env.production
+client/.env.development
