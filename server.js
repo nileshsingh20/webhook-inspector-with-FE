@@ -71,5 +71,5 @@ app.get('/', (req, res) => {
   res.send('Webhook API is running. POST to /webhook, or use the frontend dashboard.');
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
