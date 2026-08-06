@@ -1,11 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
+// import {
+//   Container, Box, Typography, Chip, Stack, TextField, InputAdornment,
+//   Select, MenuItem, Button, CircularProgress, IconButton, Collapse,
+//   Checkbox, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent,
+//   DialogActions, Snackbar, Alert, Tooltip, Table, TableBody, TableCell,
+//   TableHead, TableRow, Tabs, Tab,
+// } from '@mui/material';
 import {
   Container, Box, Typography, Chip, Stack, TextField, InputAdornment,
   Select, MenuItem, Button, CircularProgress, IconButton, Collapse,
   Checkbox, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent,
   DialogActions, Snackbar, Alert, Tooltip, Table, TableBody, TableCell,
-  TableHead, TableRow, Tabs, Tab,
+  TableHead, TableRow, Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -19,6 +26,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import DownloadIcon from '@mui/icons-material/Download';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import { getTheme } from './theme';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -54,59 +62,265 @@ function downloadJSON(data, filename) {
 }
 
 
-function EndpointBar({ endpoints, selectedId, onSelect, onCreate, onDelete, onCopy }) {
+// function EndpointBar({ endpoints, selectedId, onSelect, onCreate, onDelete, onCopy }) {
+//   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+//   const scrollerRef = useRef(null);
+
+//   return (
+//     <Box mb={3}>
+//       <Typography variant="subtitle2" color="text.secondary" mb={1}>
+//         Your webhook URLs ({endpoints.length}/{MAX_ENDPOINTS})
+//       </Typography>
+//       {/* <Tabs
+//   value={selectedId || 'all'}
+//   onChange={(e, val) => {
+//     if (val === '__new__') return; // handled by the tab's own onClick → onCreate
+//     onSelect(val === 'all' ? '' : val);
+//   }}
+//   variant="scrollable"
+//   scrollButtons="auto"
+//   sx={{ minHeight: 40, borderBottom: '1px solid', borderColor: 'divider' }} 
+//  > */}
+//      <Tabs
+//   ref={scrollerRef}
+//   value={selectedId || 'all'}
+//   onChange={(e, val) => {
+//     if (val === '__new__') return;
+//     onSelect(val === 'all' ? '' : val);
+//   }}
+//   variant="scrollable"
+//   scrollButtons
+//   allowScrollButtonsMobile
+//   sx={{
+//     minHeight: 40,
+//     borderBottom: '1px solid',
+//     borderColor: 'divider',
+//     maxWidth: '100%',
+//     '& .MuiTabs-scrollButtons.Mui-disabled': { opacity: 0.3 },
+//   }}
+// >
+//         <Tab label="All" value="all" sx={{ minHeight: 40 }} />
+//         {endpoints.map((ep) => (
+//           <Tab
+//             key={ep._id}
+//             value={ep._id}
+//             sx={{ minHeight: 40 }}
+//             label={
+//               <Stack direction="row" spacing={0.75} alignItems="center">
+//                 <span>{ep.label}</span>
+//                 <Chip label={ep.eventCount} size="small" sx={{ height: 18, fontSize: '0.68rem' }} />
+//                 <Tooltip title="Copy URL">
+//                   <ContentCopyIcon
+//                     fontSize="inherit"
+//                     sx={{ fontSize: 14, '&:hover': { color: 'primary.main' } }}
+//                     onClick={(e) => { e.stopPropagation(); onCopy(ep._id); }}
+//                   />
+//                 </Tooltip>
+//                 <Tooltip title="Delete this URL and its events">
+//                   <DeleteIcon
+//                     fontSize="inherit"
+//                     sx={{ fontSize: 14, '&:hover': { color: 'error.main' } }}
+//                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(ep._id); }}
+//                   />
+//                 </Tooltip>
+//               </Stack>
+//             }
+//           />
+//         ))}
+//         {/* <Tab
+//           icon={<AddIcon fontSize="small" />}
+//           iconPosition="start"
+//           label="New"
+//           value="__new__"
+//           disabled={endpoints.length >= MAX_ENDPOINTS}
+//           onClick={(e) => { e.preventDefault(); onCreate(); }}
+//           sx={{ minHeight: 40 }}
+//         /> */}
+//         <Tab
+//   icon={<AddIcon fontSize="small" />}
+//   iconPosition="start"
+//   label="New"
+//   value="__new__"
+//   onClick={(e) => { e.preventDefault(); onCreate(); }}
+//   sx={{ minHeight: 40 }}
+// />
+//       </Tabs>
+
+//       {selectedId && (
+//         <Box mt={1.5} p={1.5} sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+//           <Stack direction="row" alignItems="center" spacing={1}>
+//             <Typography variant="body2" fontFamily="monospace" sx={{ wordBreak: 'break-all', flex: 1 }}>
+//               {`${API_URL}/webhook/${selectedId}`}
+//             </Typography>
+//             <Button size="small" startIcon={<ContentCopyIcon fontSize="small" />} onClick={() => onCopy(selectedId)}>
+//               Copy
+//             </Button>
+//           </Stack>
+//         </Box>
+//       )}
+
+//       <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
+//         <DialogTitle>Delete this webhook URL?</DialogTitle>
+//         <DialogContent>
+//           <Typography variant="body2" color="text.secondary">
+//             This deletes the URL and all events received on it. This can't be undone.
+//           </Typography>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+//           {/* <Button
+//             color="error"
+//             variant="contained"
+//             onClick={() => { onDelete(confirmDeleteId); setConfirmDeleteId(null); }}
+//           >
+//             Delete
+//           </Button> */}
+//           <Button
+//   color="error"
+//   variant="contained"
+//   onClick={() => {
+//     const scrollerEl = scrollerRef.current?.querySelector?.('.MuiTabs-scroller')
+//       || document.querySelector('.MuiTabs-scroller');
+//     const preservedScrollLeft = scrollerEl?.scrollLeft;
+
+//     onDelete(confirmDeleteId);
+//     setConfirmDeleteId(null);
+
+//     // Restore scroll position after the tab list re-renders and MUI
+//     // finishes its own auto-scroll-to-selected-tab behavior
+//     requestAnimationFrame(() => {
+//       requestAnimationFrame(() => {
+//         const el = scrollerRef.current?.querySelector?.('.MuiTabs-scroller')
+//           || document.querySelector('.MuiTabs-scroller');
+//         if (el && preservedScrollLeft != null) {
+//           el.scrollLeft = preservedScrollLeft;
+//         }
+//       });
+//     });
+//   }}
+// >
+//   Delete
+// </Button>
+//         </DialogActions>
+//       </Dialog>
+//     </Box>
+//   );
+// }
+
+function EndpointBar({ endpoints, selectedId, onSelect, onCreate, onDelete, onCopy, onRename }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [renameTarget, setRenameTarget] = useState(null); // { id, currentLabel }
+  const [renameValue, setRenameValue] = useState('');
+  const [selectOpen, setSelectOpen] = useState(false);
+
+  // const openRename = (ep) => {
+  //   setRenameTarget(ep);
+  //   setRenameValue(ep.label);
+  // };
+ const openRename = (ep) => {
+  const idx = endpoints.findIndex((e) => e._id === ep._id);
+  setSelectOpen(false); 
+  setRenameTarget(ep);
+  setRenameValue(ep.label || `Webhook ${idx + 1}`);
+};
+
+  const submitRename = async () => {
+  if (!renameTarget || !renameValue.trim()) {
+    setRenameTarget(null);
+    return;
+  }
+  await onRename(renameTarget._id, renameValue.trim());
+  setRenameTarget(null); // close only after the update has actually completed
+};
 
   return (
     <Box mb={3}>
       <Typography variant="subtitle2" color="text.secondary" mb={1}>
         Your webhook URLs ({endpoints.length}/{MAX_ENDPOINTS})
       </Typography>
-      <Tabs
-        value={selectedId || 'all'}
-        onChange={(e, val) => onSelect(val === 'all' ? '' : val)}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{ minHeight: 40, borderBottom: '1px solid', borderColor: 'divider' }}
+
+      <Select
+        // value={selectedId || 'all'}
+        // onChange={(e) => {
+        //   const val = e.target.value;
+        //   if (val === '__new__') {
+        //     onCreate();
+        //     return;
+        //   }
+        //   onSelect(val === 'all' ? '' : val);
+        // }}
+        // renderValue={(val) => {
+        //   if (val === 'all') return `All webhook URLs (${endpoints.length})`;
+        //   const ep = endpoints.find((e) => e._id === val);
+        //   return ep ? ep.label : 'Select a webhook URL';
+        // }}
+        open={selectOpen}
+  onOpen={() => setSelectOpen(true)}
+  onClose={() => setSelectOpen(false)}
+  value={selectedId || 'all'}
+  onChange={(e) => {
+    const val = e.target.value;
+    if (val === '__new__') {
+      onCreate();
+      return;
+    }
+    onSelect(val === 'all' ? '' : val);
+  }}
+          renderValue={(val) => {
+           if (val === 'all') return `All webhook URLs (${endpoints.length})`;
+           const idx = endpoints.findIndex((e) => e._id === val);
+           if (idx === -1) return 'Select a webhook URL';
+           return endpoints[idx].label || `Webhook ${idx + 1}`;
+         }}
+        size="small"
+        fullWidth
+        sx={{ maxWidth: 420 }}
       >
-        <Tab label="All" value="all" sx={{ minHeight: 40 }} />
-        {endpoints.map((ep) => (
-          <Tab
-            key={ep._id}
-            value={ep._id}
-            sx={{ minHeight: 40 }}
-            label={
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <span>{ep.label}</span>
-                <Chip label={ep.eventCount} size="small" sx={{ height: 18, fontSize: '0.68rem' }} />
-                <Tooltip title="Copy URL">
-                  <ContentCopyIcon
-                    fontSize="inherit"
-                    sx={{ fontSize: 14, '&:hover': { color: 'primary.main' } }}
-                    onClick={(e) => { e.stopPropagation(); onCopy(ep._id); }}
-                  />
-                </Tooltip>
-                <Tooltip title="Delete this URL and its events">
-                  <DeleteIcon
-                    fontSize="inherit"
-                    sx={{ fontSize: 14, '&:hover': { color: 'error.main' } }}
-                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(ep._id); }}
-                  />
-                </Tooltip>
-              </Stack>
-            }
-          />
+        <MenuItem value="all">All webhook URLs ({endpoints.length})</MenuItem>
+
+         {endpoints.map((ep, idx) => (
+  <MenuItem key={ep._id} value={ep._id}>
+    <Stack direction="row" justifyContent="space-between" alignItems="center" width="100%">
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+        <Typography noWrap>{ep.label || `Webhook ${idx + 1}`}</Typography>
+    <Chip
+      label={ep.eventCount}
+      size="small"
+      sx={{
+        height: 18,
+        fontSize: '0.68rem',
+        fontWeight: 700,
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#22d3ee' : '#0891b2'),
+        color: '#fff',
+        flexShrink: 0,
+      }}
+    />
+  </Stack>
+  <Stack direction="row" spacing={0} sx={{ flexShrink: 0 }}>
+    <Tooltip title="Rename">
+      <IconButton size="small" onClick={(e) => { e.stopPropagation(); openRename(ep); }}>
+        <EditIcon sx={{ fontSize: 15 }} />
+      </IconButton>
+    </Tooltip>
+    <Tooltip title="Delete">
+      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setSelectOpen(false); setConfirmDeleteId(ep._id); }}>
+        <DeleteIcon sx={{ fontSize: 15 }} />
+      </IconButton>
+    </Tooltip>
+  </Stack>
+</Stack>
+          </MenuItem>
         ))}
-        <Tab
-          icon={<AddIcon fontSize="small" />}
-          iconPosition="start"
-          label="New"
-          value="__new__"
-          disabled={endpoints.length >= MAX_ENDPOINTS}
-          onClick={(e) => { e.preventDefault(); onCreate(); }}
-          sx={{ minHeight: 40 }}
-        />
-      </Tabs>
+
+        <Divider />
+
+        <MenuItem value="__new__" disabled={endpoints.length >= MAX_ENDPOINTS}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ color: 'primary.main' }}>
+            <AddIcon fontSize="small" />
+            <span>New webhook URL</span>
+          </Stack>
+        </MenuItem>
+      </Select>
 
       {selectedId && (
         <Box mt={1.5} p={1.5} sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
@@ -121,6 +335,34 @@ function EndpointBar({ endpoints, selectedId, onSelect, onCreate, onDelete, onCo
         </Box>
       )}
 
+      {/* Rename dialog */}
+      <Dialog open={!!renameTarget} onClose={() => setRenameTarget(null)}>
+        <DialogTitle>Rename webhook URL</DialogTitle>
+        <DialogContent>
+          <TextField
+  autoFocus
+  fullWidth
+  size="small"
+  label="Name"
+  value={renameValue}
+  onChange={(e) => setRenameValue(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      submitRename();
+    }
+  }}
+  sx={{ mt: 1, minWidth: 320 }}
+/>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRenameTarget(null)}>Cancel</Button>
+          <Button variant="contained" onClick={submitRename}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirm dialog */}
       <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
         <DialogTitle>Delete this webhook URL?</DialogTitle>
         <DialogContent>
@@ -294,7 +536,7 @@ function App() {
 
   const [endpoints, setEndpoints] = useState([]);
   const [selectedEndpointId, setSelectedEndpointId] = useState('');
-
+  const [replayDialog, setReplayDialog] = useState({ open: false, event: null });
   const [events, setEvents] = useState([]);
   const [dates, setDates] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
@@ -303,7 +545,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [compareOpen, setCompareOpen] = useState(false);
   const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
@@ -369,30 +611,53 @@ function App() {
     return () => clearInterval(interval);
   }, [autoRefresh, fetchEvents, fetchFilters, fetchEndpoints]);
 
-  const createEndpoint = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/endpoints`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-      const data = await res.json();
-      if (!res.ok) return notify(data.error || 'Failed to create webhook URL', 'error');
-      await fetchEndpoints();
-      setSelectedEndpointId(data._id);
-      notify('New webhook URL created');
-    } catch (err) {
-      notify('Failed to create webhook URL', 'error');
-    }
-  };
+  // const createEndpoint = async () => {
+  //   try {
+  //     const res = await fetch(`${API_URL}/api/endpoints`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+  //     const data = await res.json();
+  //     if (!res.ok) return notify(data.error || 'Failed to create webhook URL', 'error');
+  //     await fetchEndpoints();
+  //     setSelectedEndpointId(data._id);
+  //     notify('New webhook URL created');
+  //   } catch (err) {
+  //     notify('Failed to create webhook URL', 'error');
+  //   }
+  // };
+  
+   const createEndpoint = async () => {
+  if (endpoints.length >= MAX_ENDPOINTS) {
+    notify(`Only ${MAX_ENDPOINTS} webhook URLs are allowed. Delete one before creating another.`, 'error');
+    return;
+  }
+  try {
+    const res = await fetch(`${API_URL}/api/endpoints`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+    const data = await res.json();
+    if (!res.ok) return notify(data.error || 'Failed to create webhook URL', 'error');
+    await fetchEndpoints();
+    setSelectedEndpointId(data._id);
+    notify('New webhook URL created');
+  } catch (err) {
+    notify('Failed to create webhook URL', 'error');
+  }
+};
+
 
   const deleteEndpoint = async (id) => {
-    try {
-      await fetch(`${API_URL}/api/endpoints/${id}`, { method: 'DELETE' });
-      if (selectedEndpointId === id) setSelectedEndpointId('');
-      await fetchEndpoints();
+  try {
+    await fetch(`${API_URL}/api/endpoints/${id}`, { method: 'DELETE' });
+
+    if (selectedEndpointId === id) {
+      setSelectedEndpointId('');
+    } else {
       fetchEvents();
-      notify('Webhook URL deleted');
-    } catch (err) {
-      notify('Failed to delete webhook URL', 'error');
     }
-  };
+
+    await fetchEndpoints();
+    notify('Webhook URL deleted');
+  } catch (err) {
+    notify('Failed to delete webhook URL', 'error');
+  }
+};
 
   const copyEndpointUrl = async (id) => {
     try {
@@ -402,6 +667,22 @@ function App() {
       notify('Copy failed', 'error');
     }
   };
+
+  const renameEndpoint = async (id, newLabel) => {
+  try {
+    const res = await fetch(`${API_URL}/api/endpoints/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: newLabel }),
+    });
+    const data = await res.json();
+    if (!res.ok) return notify(data.error || 'Failed to rename', 'error');
+    await fetchEndpoints();
+    notify('Webhook renamed');
+  } catch (err) {
+    notify('Failed to rename webhook', 'error');
+  }
+};
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -448,22 +729,32 @@ function App() {
     }
   };
 
-  const replayEvent = async (event) => {
-    const targetEndpoint = event.endpointId || selectedEndpointId;
-    if (!targetEndpoint) return notify('Select a specific webhook URL to replay into', 'error');
-    try {
-      await fetch(`${API_URL}/webhook/${targetEndpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(event.body),
-      });
-      notify('Webhook replayed');
-      fetchEvents();
-      fetchEndpoints();
-    } catch (err) {
-      notify('Replay failed', 'error');
-    }
-  };
+  const replayEvent = (event) => {
+  const targetEndpoint = event.endpointId || selectedEndpointId;
+  if (!targetEndpoint) {
+    // No clear target — ask the user which webhook URL to replay into
+    setReplayDialog({ open: true, event });
+    return;
+  }
+  sendReplay(targetEndpoint, event);
+};
+
+const sendReplay = async (endpointId, event) => {
+  try {
+    await fetch(`${API_URL}/webhook/${endpointId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event.body),
+    });
+    notify('Webhook replayed');
+    fetchEvents();
+    fetchEndpoints();
+  } catch (err) {
+    notify('Replay failed', 'error');
+  } finally {
+    setReplayDialog({ open: false, event: null });
+  }
+};
 
   const copyEvent = async (body) => {
     try {
@@ -506,24 +797,42 @@ function App() {
             </Box>
 
             <Stack direction="row" spacing={1} alignItems="center">
-              <FormControlLabel
+              {/* <FormControlLabel
                 control={<Switch size="small" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />}
                 label={<Typography variant="caption">Live</Typography>}
-              />
+              /> */}
+
+              <Tooltip title="When enabled, automatically refreshes every 5 seconds to display new webhook events.">
+  <FormControlLabel
+    control={<Switch size="small" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />}
+    label={<Typography variant="caption">Live</Typography>}
+    sx={{ mr: 0 }}
+  />
+</Tooltip>
               <IconButton onClick={toggleMode} sx={{ border: '1px solid', borderColor: 'divider' }}>
                 {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
             </Stack>
           </Stack>
 
-          <EndpointBar
+          {/* <EndpointBar
             endpoints={endpoints}
             selectedId={selectedEndpointId}
             onSelect={setSelectedEndpointId}
             onCreate={createEndpoint}
             onDelete={deleteEndpoint}
             onCopy={copyEndpointUrl}
-          />
+          /> */}
+
+          <EndpointBar
+  endpoints={endpoints}
+  selectedId={selectedEndpointId}
+  onSelect={setSelectedEndpointId}
+  onCreate={createEndpoint}
+  onDelete={deleteEndpoint}
+  onCopy={copyEndpointUrl}
+  onRename={renameEndpoint}
+/>
 
           <Stack direction="row" spacing={1.5} mb={2} flexWrap="wrap" useFlexGap>
             <TextField
@@ -587,12 +896,21 @@ function App() {
 
             <Box flex={1} />
 
-            <Button size="small" startIcon={<DownloadIcon />} onClick={exportEvents}>
+            <Button size="small" startIcon={<DownloadIcon />} onClick={exportEvents} disabled={events.length === 0}>
               Export {selectedIds.size > 0 ? 'selected' : 'all'}
             </Button>
-            <Button size="small" color="error" startIcon={<DeleteSweepIcon />} onClick={() => setClearAllConfirmOpen(true)}>
+            {/* <Button size="small" color="error" startIcon={<DeleteSweepIcon />} onClick={() => setClearAllConfirmOpen(true)}>
               Clear all
-            </Button>
+            </Button> */}
+            <Button
+  size="small"
+  color="error"
+  startIcon={<DeleteSweepIcon />}
+  onClick={() => setClearAllConfirmOpen(true)}
+  disabled={events.length === 0}
+>
+  Clear all
+</Button>
           </Stack>
 
           {loading && (
@@ -640,6 +958,34 @@ function App() {
           <Button color="error" variant="contained" onClick={clearAll}>Clear</Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={replayDialog.open} onClose={() => setReplayDialog({ open: false, event: null })}>
+  <DialogTitle>Replay into which webhook URL?</DialogTitle>
+  <DialogContent>
+    <Typography variant="body2" color="text.secondary" mb={2}>
+      This event isn't tied to a specific URL. Choose where to send it.
+    </Typography>
+    <Stack spacing={1}>
+      {endpoints.map((ep) => (
+        <Button
+          key={ep._id}
+          variant="outlined"
+          onClick={() => sendReplay(ep._id, replayDialog.event)}
+        >
+          {ep.label}
+        </Button>
+      ))}
+      {endpoints.length === 0 && (
+        <Typography variant="body2" color="text.disabled">
+          No webhook URLs exist yet — create one first.
+        </Typography>
+      )}
+    </Stack>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setReplayDialog({ open: false, event: null })}>Cancel</Button>
+  </DialogActions>
+</Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={2500} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>

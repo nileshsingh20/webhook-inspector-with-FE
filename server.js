@@ -13,6 +13,10 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+  function isValidObjectId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
+
 const MAX_ENDPOINTS = 10;
 
 function getISTDateString(date = new Date()) {
@@ -46,6 +50,22 @@ app.get('/api/endpoints', async (req, res) => {
 
 
 
+// app.post('/api/endpoints', async (req, res) => {
+//   try {
+//     const count = await WebhookEndpoint.countDocuments();
+//     if (count >= MAX_ENDPOINTS) {
+//       return res.status(400).json({ error: `Maximum of ${MAX_ENDPOINTS} webhook URLs reached. Delete one first.` });
+//     }
+//     const { label } = req.body;
+//     const endpoint = await WebhookEndpoint.create({ label: label || `Webhook ${count + 1}` });
+//     res.status(201).json(endpoint);
+//   } catch (err) {
+//     console.error('Error creating endpoint:', err);
+//     res.status(500).json({ error: 'Failed to create endpoint' });
+//   }
+// });
+
+
 app.post('/api/endpoints', async (req, res) => {
   try {
     const count = await WebhookEndpoint.countDocuments();
@@ -53,7 +73,7 @@ app.post('/api/endpoints', async (req, res) => {
       return res.status(400).json({ error: `Maximum of ${MAX_ENDPOINTS} webhook URLs reached. Delete one first.` });
     }
     const { label } = req.body;
-    const endpoint = await WebhookEndpoint.create({ label: label || `Webhook ${count + 1}` });
+    const endpoint = await WebhookEndpoint.create({ label: label || '' });
     res.status(201).json(endpoint);
   } catch (err) {
     console.error('Error creating endpoint:', err);
@@ -75,6 +95,24 @@ app.delete('/api/endpoints/:id', async (req, res) => {
 });
 
 
+app.patch('/api/endpoints/:id', async (req, res) => {
+  try {
+    const { label } = req.body;
+    if (!label || !label.trim()) {
+      return res.status(400).json({ error: 'Label cannot be empty' });
+    }
+    const endpoint = await WebhookEndpoint.findByIdAndUpdate(
+      req.params.id,
+      { label: label.trim() },
+      { new: true }
+    );
+    if (!endpoint) return res.status(404).json({ error: 'Webhook URL not found' });
+    res.json(endpoint);
+  } catch (err) {
+    console.error('Error renaming endpoint:', err);
+    res.status(500).json({ error: 'Failed to rename endpoint' });
+  }
+});
 
 app.post('/webhook/:endpointId', async (req, res) => {
   try {
@@ -109,7 +147,10 @@ app.get('/api/events', async (req, res) => {
     const query = {};
     if (date) query.dateIST = date;
     if (eventType) query['body.event'] = eventType;
-    if (endpointId) query.endpointId = endpointId;
+    if (endpointId) {
+      if (!isValidObjectId(endpointId)) return res.json([]); 
+      query.endpointId = endpointId;
+    }
 
     let events = await WebhookEvent.find(query).sort({ receivedAt: -1 }).limit(300);
 
@@ -121,7 +162,8 @@ app.get('/api/events', async (req, res) => {
     }
 
     res.json(events);
-  } catch (err) {
+  } 
+  catch (err) {
     console.error('Error fetching events:', err);
     res.status(500).json({ error: 'Failed to fetch events' });
   }
@@ -132,7 +174,8 @@ app.get('/api/events', async (req, res) => {
 app.get('/api/dates', async (req, res) => {
   try {
     const { endpointId } = req.query;
-    const dates = await WebhookEvent.distinct('dateIST', endpointId ? { endpointId } : {});
+    const filter = endpointId && isValidObjectId(endpointId) ? { endpointId } : {};
+    const dates = await WebhookEvent.distinct('dateIST', filter);
     res.json(dates.sort().reverse());
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch dates' });
@@ -144,7 +187,8 @@ app.get('/api/dates', async (req, res) => {
 app.get('/api/event-types', async (req, res) => {
   try {
     const { endpointId } = req.query;
-    const types = await WebhookEvent.distinct('body.event', endpointId ? { endpointId } : {});
+    const filter = endpointId && isValidObjectId(endpointId) ? { endpointId } : {};
+    const types = await WebhookEvent.distinct('body.event', filter);
     res.json(types.filter(Boolean).sort());
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch event types' });
