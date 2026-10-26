@@ -143,7 +143,7 @@ app.post('/webhook/:endpointId', async (req, res) => {
 
 app.get('/api/events', async (req, res) => {
   try {
-    const { date, search, eventType, endpointId } = req.query;
+    const { date, search, eventType, endpointId, sort } = req.query;
     const query = {};
     if (date) query.dateIST = date;
     if (eventType) query['body.event'] = eventType;
@@ -152,7 +152,11 @@ app.get('/api/events', async (req, res) => {
       query.endpointId = endpointId;
     }
 
-    let events = await WebhookEvent.find(query).sort({ receivedAt: -1 }).limit(300);
+    // let events = await WebhookEvent.find(query).sort({ receivedAt: -1 }).limit(300);
+    const sortDir = sort === 'oldest' ? 1 : -1;
+let events = await WebhookEvent.find(query)
+  .sort({ receivedAt: sortDir, _id: sortDir })
+  .limit(300);
 
     if (search) {
       const term = search.toLowerCase();

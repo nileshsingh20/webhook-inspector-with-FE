@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
+// import { alpha } from '@mui/material/styles';
 // import {
 //   Container, Box, Typography, Chip, Stack, TextField, InputAdornment,
 //   Select, MenuItem, Button, CircularProgress, IconButton, Collapse,
@@ -12,7 +13,7 @@ import {
   Select, MenuItem, Button, CircularProgress, IconButton, Collapse,
   Checkbox, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent,
   DialogActions, Snackbar, Alert, Tooltip, Table, TableBody, TableCell,
-  TableHead, TableRow, Divider,
+  TableHead, TableRow, Divider, Pagination
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -31,6 +32,7 @@ import { getTheme } from './theme';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const MAX_ENDPOINTS = 10;
+const PAGE_SIZE_OPTIONS = [10, 15, 20, 25, 50];
 
 function flatten(obj, prefix = '') {
   const out = {};
@@ -385,23 +387,70 @@ function EndpointBar({ endpoints, selectedId, onSelect, onCreate, onDelete, onCo
   );
 }
 
-function EventCard({ event, selected, onToggleSelect, onDelete, onReplay, onCopy }) {
+function EventCard({ event, selected, onToggleSelect, onDelete, onReplay, onCopy, opened, onOpen }) {
   const [open, setOpen] = useState(false);
   const [showHeaders, setShowHeaders] = useState(false);
   const bodyStr = JSON.stringify(event.body);
   const fieldCount = event.body && typeof event.body === 'object' ? Object.keys(event.body).length : 0;
 
   return (
-    <Box
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: open || selected ? 'primary.main' : 'divider',
-        borderRadius: 3,
-        overflow: 'hidden',
-        transition: 'border-color 0.15s',
-      }}
-    >
+    // <Box
+    //   sx={{
+    //     bgcolor: 'background.paper',
+    //     border: '1px solid',
+    //     borderColor: open || selected ? 'primary.main' : 'divider',
+    //     borderRadius: 3,
+    //     overflow: 'hidden',
+    //     transition: 'border-color 0.15s',
+    //   }}
+    // >
+
+//     <Box
+//   sx={{
+//     bgcolor: (theme) =>
+//       opened
+//         ? theme.palette.background.paper
+//         : alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.1 : 0.06),
+//     border: '1px solid',
+//     borderColor: open || selected ? 'primary.main' : 'divider',
+//     borderLeft: '4px solid',
+//     borderLeftColor: !opened || open || selected ? 'primary.main' : 'divider',
+//     borderRadius: 3,
+//     overflow: 'hidden',
+//     transition: 'border-color 0.15s, background-color 0.15s',
+//   }}
+// >   
+      <Box
+  sx={{
+    bgcolor: (theme) => {
+      const dark = theme.palette.mode === 'dark';
+      if (opened) return dark ? '#0d0e13' : '#f1f1f4';
+      return dark ? '#1e2250' : '#e0e7ff';
+    },
+    border: '1px solid',
+    borderColor: (theme) => {
+      const dark = theme.palette.mode === 'dark';
+      if (open || selected) return theme.palette.primary.main;
+      if (opened) return theme.palette.divider;
+      return dark ? '#4338ca' : '#a5b4fc';
+    },
+    borderLeft: '6px solid',
+    borderLeftColor: (theme) => {
+      const dark = theme.palette.mode === 'dark';
+      if (opened) return dark ? '#2a2e3a' : '#d4d4d8';
+      return dark ? '#818cf8' : '#4f46e5';
+    },
+    boxShadow: (theme) => {
+      if (opened) return 'none';
+      return theme.palette.mode === 'dark'
+        ? '0 0 0 1px rgba(129,140,248,0.25), 0 4px 18px rgba(99,102,241,0.3)'
+        : '0 4px 14px rgba(79,70,229,0.2)';
+    },
+    borderRadius: 3,
+    overflow: 'hidden',
+    transition: 'all 0.2s',
+  }}
+>
       <Stack direction="row" alignItems="center" px={1} py={0.5}>
         <Checkbox
           size="small"
@@ -415,12 +464,73 @@ function EventCard({ event, selected, onToggleSelect, onDelete, onReplay, onCopy
           alignItems="center"
           flex={1}
           sx={{ cursor: 'pointer' }}
-          onClick={() => setOpen(!open)}
+          // onClick={() => setOpen(!open)}
+          onClick={() => {
+  setOpen(!open);
+  if (!opened) onOpen(event._id);
+}}
         >
           <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-            <Typography variant="body2" fontWeight={600} color="primary.main">
+            {/* <Typography variant="body2" fontWeight={600} color="primary.main">
               {event.dateIST}
-            </Typography>
+            </Typography> */}
+            {/* {!opened && (
+  <Tooltip title="Unopened">
+    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0 }} />
+  </Tooltip>
+)}
+<Typography
+  variant="body2"
+  fontWeight={opened ? 500 : 700}
+  color={opened ? 'text.secondary' : 'primary.main'}
+>
+  {event.dateIST}
+</Typography> */}
+
+             {!opened && (
+  <>
+    <Box
+      sx={{
+        width: 10,
+        height: 10,
+        borderRadius: '50%',
+        flexShrink: 0,
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#a5b4fc' : '#4f46e5'),
+        animation: 'pulse 1.6s ease-in-out infinite',
+        '@keyframes pulse': {
+          '0%': { boxShadow: '0 0 0 0 rgba(99,102,241,0.7)' },
+          '70%': { boxShadow: '0 0 0 8px rgba(99,102,241,0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(99,102,241,0)' },
+        },
+      }}
+    />
+    <Chip
+      label="NEW"
+      size="small"
+      sx={{
+        height: 18,
+        fontSize: '0.65rem',
+        fontWeight: 800,
+        letterSpacing: '0.06em',
+        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#818cf8' : '#4f46e5'),
+        color: (theme) => (theme.palette.mode === 'dark' ? '#0a0b0f' : '#ffffff'),
+      }}
+    />
+  </>
+)}
+<Typography
+  variant="body2"
+  sx={{
+    fontWeight: opened ? 500 : 800,
+    color: (theme) => {
+      const dark = theme.palette.mode === 'dark';
+      if (opened) return theme.palette.text.secondary;
+      return dark ? '#c7d2fe' : '#3730a3';
+    },
+  }}
+>
+  {event.dateIST}
+</Typography>
             <Typography variant="caption" color="text.secondary">
               {new Date(event.receivedAt).toLocaleTimeString()}
             </Typography>
@@ -461,9 +571,23 @@ function EventCard({ event, selected, onToggleSelect, onDelete, onReplay, onCopy
       </Stack>
 
       {!open && (
-        <Typography px={2} pb={1.5} variant="caption" color="text.disabled" fontFamily="monospace" noWrap display="block">
-          {bodyStr}
-        </Typography>
+        // <Typography px={2} pb={1.5} variant="caption" color="text.disabled" fontFamily="monospace" noWrap display="block">
+        //   {bodyStr}
+        // </Typography>
+        <Typography
+  px={2}
+  pb={1.5}
+  variant="caption"
+  fontFamily="monospace"
+  noWrap
+  display="block"
+  sx={{
+    color: opened ? 'text.disabled' : 'text.primary',
+    fontWeight: opened ? 400 : 500,
+  }}
+>
+  {bodyStr}
+</Typography>
       )}
 
       <Collapse in={open}>
@@ -549,6 +673,33 @@ function App() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [compareOpen, setCompareOpen] = useState(false);
   const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+const [openedIds, setOpenedIds] = useState(() => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('opened-events') || '[]'));
+  } catch {
+    return new Set();
+  }
+});
+
+const markOpened = useCallback((id) => {
+  setOpenedIds((prev) => {
+    if (prev.has(id)) return prev;
+    const next = new Set(prev);
+    next.add(id);
+    return next;
+  });
+}, []);
+
+
+useEffect(() => {
+  try {
+    localStorage.setItem('opened-events', JSON.stringify(Array.from(openedIds).slice(-2000)));
+  } catch {}
+}, [openedIds]);
 
   const toggleMode = () => {
     const next = mode === 'dark' ? 'light' : 'dark';
@@ -574,12 +725,13 @@ function App() {
       if (selectedDate) params.set('date', selectedDate);
       if (selectedType) params.set('eventType', selectedType);
       if (search) params.set('search', search);
+      params.set('sort', sortOrder);
       const res = await fetch(`${API_URL}/api/events?${params.toString()}`);
       setEvents(await res.json());
     } catch (err) {
       console.error(err);
     }
-  }, [selectedEndpointId, selectedDate, selectedType, search]);
+  }, [selectedEndpointId, selectedDate, selectedType, search, sortOrder]);
 
   const fetchFilters = useCallback(() => {
     const params = new URLSearchParams();
@@ -684,6 +836,17 @@ function App() {
   }
 };
 
+
+  const totalPages = Math.max(1, Math.ceil(events.length / pageSize));
+const currentPage = Math.min(page, totalPages); // guards against deleting the last item on the last page
+const startIndex = (currentPage - 1) * pageSize;
+const pagedEvents = events.slice(startIndex, startIndex + pageSize);
+
+// Back to page 1 whenever the result set changes shape
+useEffect(() => {
+  setPage(1);
+}, [selectedEndpointId, selectedDate, selectedType, search, sortOrder, pageSize]);
+
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -692,9 +855,21 @@ function App() {
     });
   };
 
-  const toggleSelectAll = () => {
-    setSelectedIds(selectedIds.size === events.length ? new Set() : new Set(events.map((e) => e._id)));
-  };
+  // const toggleSelectAll = () => {
+  //   setSelectedIds(selectedIds.size === events.length ? new Set() : new Set(events.map((e) => e._id)));
+  // };
+
+  const allPageSelected = pagedEvents.length > 0 && pagedEvents.every((e) => selectedIds.has(e._id));
+const somePageSelected = pagedEvents.some((e) => selectedIds.has(e._id));
+
+const toggleSelectAll = () => {
+  setSelectedIds((prev) => {
+    const next = new Set(prev);
+    if (allPageSelected) pagedEvents.forEach((e) => next.delete(e._id));
+    else pagedEvents.forEach((e) => next.add(e._id));
+    return next;
+  });
+};
 
   const deleteEvents = async (ids) => {
     try {
@@ -860,6 +1035,16 @@ const sendReplay = async (endpointId, event) => {
               {eventTypes.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
 
+            <Select
+  value={sortOrder}
+  onChange={(e) => setSortOrder(e.target.value)}
+  size="small"
+  sx={{ minWidth: 150 }}
+>
+  <MenuItem value="newest">Newest first</MenuItem>
+  <MenuItem value="oldest">Oldest first</MenuItem>
+</Select>
+
             {(selectedDate || search || selectedType) && (
               <Button variant="outlined" onClick={() => { setSelectedDate(''); setSelectedType(''); setSearch(''); }}>
                 Clear filters
@@ -870,14 +1055,20 @@ const sendReplay = async (endpointId, event) => {
           <Stack direction="row" spacing={1.5} mb={4} alignItems="center" flexWrap="wrap" useFlexGap>
             <FormControlLabel
               control={
+                // <Checkbox
+                //   size="small"
+                //   checked={allPageSelected}
+                //   indeterminate={somePageSelected && !allPageSelected}
+                //   onChange={toggleSelectAll}
+                // />
                 <Checkbox
                   size="small"
-                  checked={events.length > 0 && selectedIds.size === events.length}
-                  indeterminate={selectedIds.size > 0 && selectedIds.size < events.length}
+                  checked={allPageSelected}
+                  indeterminate={somePageSelected && !allPageSelected}
                   onChange={toggleSelectAll}
                 />
               }
-              label={<Typography variant="body2">Select all</Typography>}
+              label={<Typography variant="body2">Select page</Typography>}
             />
 
             {selectedIds.size > 0 && (
@@ -929,10 +1120,12 @@ const sendReplay = async (endpointId, event) => {
           )}
 
           <Stack spacing={1}>
-            {events.map((event) => (
+            {pagedEvents.map((event) => (
               <EventCard
                 key={event._id}
                 event={event}
+                opened={openedIds.has(event._id)}
+                onOpen={markOpened}
                 selected={selectedIds.has(event._id)}
                 onToggleSelect={toggleSelect}
                 onDelete={deleteEvents}
@@ -941,6 +1134,46 @@ const sendReplay = async (endpointId, event) => {
               />
             ))}
           </Stack>
+          {events.length > 0 && (
+  <Stack
+    direction="row"
+    justifyContent="space-between"
+    alignItems="center"
+    flexWrap="wrap"
+    useFlexGap
+    gap={2}
+    mt={3}
+  >
+    <Stack direction="row" spacing={1.5} alignItems="center">
+      <Typography variant="body2" color="text.secondary">Per page</Typography>
+      <Select
+        value={pageSize}
+        onChange={(e) => setPageSize(Number(e.target.value))}
+        size="small"
+      >
+        {PAGE_SIZE_OPTIONS.map((n) => (
+          <MenuItem key={n} value={n}>{n}</MenuItem>
+        ))}
+      </Select>
+      <Typography variant="body2" color="text.secondary">
+        {startIndex + 1}–{Math.min(startIndex + pageSize, events.length)} of {events.length}
+      </Typography>
+    </Stack>
+
+    <Pagination
+      count={totalPages}
+      page={currentPage}
+      onChange={(e, value) => {
+        setPage(value);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      color="primary"
+      shape="rounded"
+      showFirstButton
+      showLastButton
+    />
+  </Stack>
+)}
         </Container>
       </Box>
 
