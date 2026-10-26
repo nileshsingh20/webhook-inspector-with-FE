@@ -776,6 +776,12 @@ useEffect(() => {
   //   }
   // };
   
+     // Any change of selected URL (including "All") resets sorting to newest first
+const selectEndpoint = (id) => {
+  setSelectedEndpointId(id);
+  setSortOrder('newest');
+};
+   
    const createEndpoint = async () => {
   if (endpoints.length >= MAX_ENDPOINTS) {
     notify(`Only ${MAX_ENDPOINTS} webhook URLs are allowed. Delete one before creating another.`, 'error');
@@ -786,7 +792,7 @@ useEffect(() => {
     const data = await res.json();
     if (!res.ok) return notify(data.error || 'Failed to create webhook URL', 'error');
     await fetchEndpoints();
-    setSelectedEndpointId(data._id);
+    selectEndpoint(data._id);
     notify('New webhook URL created');
   } catch (err) {
     notify('Failed to create webhook URL', 'error');
@@ -799,7 +805,7 @@ useEffect(() => {
     await fetch(`${API_URL}/api/endpoints/${id}`, { method: 'DELETE' });
 
     if (selectedEndpointId === id) {
-      setSelectedEndpointId('');
+      selectEndpoint('');
     } else {
       fetchEvents();
     }
@@ -1002,7 +1008,7 @@ const sendReplay = async (endpointId, event) => {
           <EndpointBar
   endpoints={endpoints}
   selectedId={selectedEndpointId}
-  onSelect={setSelectedEndpointId}
+  onSelect={selectEndpoint}
   onCreate={createEndpoint}
   onDelete={deleteEndpoint}
   onCopy={copyEndpointUrl}
